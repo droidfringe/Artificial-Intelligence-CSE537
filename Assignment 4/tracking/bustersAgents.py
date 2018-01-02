@@ -101,6 +101,7 @@ class BustersAgent:
 
     def chooseAction(self, gameState):
         "By default, a BustersAgent just stops.  This should be overridden."
+
         return Directions.STOP
 
 class BustersKeyboardAgent(BustersAgent, KeyboardAgent):
@@ -163,4 +164,22 @@ class GreedyBustersAgent(BustersAgent):
             [beliefs for i, beliefs in enumerate(self.ghostBeliefs)
              if livingGhosts[i+1]]
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        #util.raiseNotDefined()
+        livingGhostsMostLikelyPos = []
+        for belief in livingGhostPositionDistributions:
+            livingGhostsMostLikelyPos.append(belief.argMax())
+        livingGhostDistances = []
+        for pos in livingGhostsMostLikelyPos:
+            livingGhostDistances.append((pos, self.distancer.getDistance(pos, pacmanPosition)))
+        closestGhost = min(livingGhostDistances, key=lambda x:x[1])
+        closestGhostPos = closestGhost[0]
+        closestGhostDist = closestGhost[1]
+
+        distances = []
+        for action in legal:
+            successorPosition = Actions.getSuccessor(pacmanPosition, action)
+            distances.append((action,self.distancer.getDistance(successorPosition, closestGhostPos)))
+        #print distances
+        bestAction = min(distances, key=lambda x:x[1])
+        #print 'Chosen: ', bestAction
+        return bestAction[0]

@@ -40,6 +40,7 @@ from game import Actions
 import util
 import time
 import search
+import itertools
 
 class GoWestAgent(Agent):
     "An agent that goes West until it can't."
@@ -152,6 +153,7 @@ class PositionSearchProblem(search.SearchProblem):
         costFn: A function from a search state (tuple) to a non-negative number
         goal: A position in the gameState
         """
+        print 'gameState class is ', gameState.__class__
         self.walls = gameState.getWalls()
         self.startState = gameState.getPacmanPosition()
         if start != None: self.startState = start
@@ -191,7 +193,8 @@ class PositionSearchProblem(search.SearchProblem):
          required to get there, and 'stepCost' is the incremental
          cost of expanding to that successor
         """
-
+        # print state.__class__
+        # prints tuple
         successors = []
         for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
             x,y = state
@@ -288,6 +291,19 @@ class CornersProblem(search.SearchProblem):
         # Please add any code here which you would like to use
         # in initializing the problem
         "*** YOUR CODE HERE ***"
+        # For each corner in the game, store 1 if it is visited, else 0
+        cornersVisitedStatus = ()
+        for corner in self.corners:
+            # If start position is a corner, mark that corner visited
+            if self.startingPosition == corner:
+                cornersVisitedStatus += ((corner,1),)
+            else:
+                cornersVisitedStatus += ((corner, 0),)
+        #print 'CornersVisitedStatus', cornersVisitedStatus
+        # Define start state as a tuple - (startPosition, cornerVisitedStatus)
+        self.startState = (self.startingPosition, cornersVisitedStatus)
+        #print 'Self.startState', self.startState
+
 
     def getStartState(self):
         """
@@ -295,14 +311,29 @@ class CornersProblem(search.SearchProblem):
         space)
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # Return the start state which was initialised in constructor
+        return self.startState
+        #util.raiseNotDefined()
 
     def isGoalState(self, state):
         """
         Returns whether this search state is a goal state of the problem.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        # Get the cornerVisitedStatus information from state
+        currentPosition, cornersVisitedStatus = state
+        areAllCornersVisited = True
+        #print 'isGoalState : ', state
+        #print 'isGoalState : ', cornersVisitedStatus
+        # Iterate cornersVisitedStatus to see if all the corners are visited
+        for corner in cornersVisitedStatus:
+            #print corner
+            location, visitedStatus = corner
+            areAllCornersVisited = areAllCornersVisited and (visitedStatus == 1)
+        #print 'isGoalState: ', state, ' ? ', areAllCornersVisited
+
+        return areAllCornersVisited
+        #util.raiseNotDefined()
 
     def getSuccessors(self, state):
         """
@@ -314,8 +345,13 @@ class CornersProblem(search.SearchProblem):
             state, 'action' is the action required to get there, and 'stepCost'
             is the incremental cost of expanding to that successor
         """
-
+        # Get current location and visited status of corners from state
+        currentPosition, cornersVisitedStatus = state
         successors = []
+        cost = 1
+        # For every possible action, check if pacman can reach a legal state
+        # If yes, then check if new position is a corner
+        # If yes, mark that corner as visited
         for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
             # Add a successor state to the successor list if the action is legal
             # Here's a code snippet for figuring out whether a new position hits a wall:
@@ -325,8 +361,26 @@ class CornersProblem(search.SearchProblem):
             #   hitsWall = self.walls[nextx][nexty]
 
             "*** YOUR CODE HERE ***"
-
+            x, y = currentPosition
+            dx, dy = Actions.directionToVector(action)
+            nextx, nexty = int(x + dx), int(y + dy)
+            # Check if next position pacman can reach is legal
+            if not self.walls[nextx][nexty]:
+                nextStateCornersVisitedStatus = ()
+                nextStateLocation = (nextx, nexty)
+                # Check if new position is a corner
+                # If it is a corner, mark it visited
+                for cornerStatus in cornersVisitedStatus:
+                    cornerLocation, isCornerVisited = cornerStatus
+                    if nextStateLocation == cornerLocation:
+                        nextStateCornersVisitedStatus += ((cornerLocation, 1),)
+                    else:
+                        nextStateCornersVisitedStatus += ((cornerLocation, isCornerVisited),)
+                nextState = (nextStateLocation, nextStateCornersVisitedStatus)
+                # Append next state to list of successors
+                successors.append((nextState, action, cost))
         self._expanded += 1 # DO NOT CHANGE
+
         return successors
 
     def getCostOfActions(self, actions):
@@ -342,7 +396,46 @@ class CornersProblem(search.SearchProblem):
             if self.walls[x][y]: return 999999
         return len(actions)
 
+'''
+ManhattanDistanceBetweenTwoPoints takes two points as input and returns Manhattan Distance between these two points
+'''
+def ManhattanDistanceBetweenTwoPoints(point1, point2):
+    return abs(point1[0] - point2[0]) + abs(point1[1] - point2[1])
 
+'''
+ManhattanDistanceEachDirectionBetweenTwoPoints takes two points as input and returns the components of Manhattan distance as a tuple :
+(Distance in X, Distance in Y)
+'''
+def ManhattanDistanceEachDirectionBetweenTwoPoints(point1, point2):
+    return (abs(point1[0] - point2[0]), abs(point1[1] - point2[1]))
+
+'''
+ManhattanDistanceBetweenManyPoints takes a list of points as input and returns the total Manhattan distance from going to first point to last point
+in the input list, following the path as listed in the input list
+'''
+def ManhattanDistanceBetweenManyPoints(points):
+    totalDistance = 0
+    for i in range(1,len(points)):
+        totalDistance += ManhattanDistanceBetweenTwoPoints(points[i-1], points[i])
+    return totalDistance
+'''
+EuclideanDistanceBetweenTwoPoints takes two points as input and returns the Euclidean distance between these points
+'''
+def EuclideanDistanceBetweenTwoPoints(point1, point2):
+    return ((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2)**0.5
+
+'''
+EuclideanDistanceBetweenManyPoints takes a list of points as input and returns the total Euclidean distance from going to first point to last point
+in the input list, following the path as listed in the input list
+'''
+def EuclideanDistanceBetweenManyPoints(points):
+    totalDistance = 0
+    for i in range(1,len(points)):
+        totalDistance += EuclideanDistanceBetweenTwoPoints(points[i-1], points[i])
+    return totalDistance
+'''
+Relaxed the problem, by assuming that there are no walls in the grid
+'''
 def cornersHeuristic(state, problem):
     """
     A heuristic for the CornersProblem that you defined.
@@ -360,7 +453,32 @@ def cornersHeuristic(state, problem):
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
 
     "*** YOUR CODE HERE ***"
-    return 0 # Default to trivial solution
+    # Get current position and visited status of corners from state
+    currentPosition, cornersVisitedStatus = state
+    # If current state is goal state, heuristic is 0
+    if(problem.isGoalState(state)):
+        return 0
+    # List all the corners which still need to be visited
+    pointsToVisit = ()
+    #pointsToVisit += (currentPosition,)
+    for cornerStatus in cornersVisitedStatus:
+        cornerLocation, isCornerVisited = cornerStatus
+        if(isCornerVisited == 0):
+            pointsToVisit += (cornerLocation,)
+
+    heuristicDistances = []
+    # Find all orderings in which the remaining corners can be visited
+    cornerVisitPermutations = list(itertools.permutations(pointsToVisit))
+    # For all the orderings, find the total manhattan distance to visit all corners from start position
+    for cornerVisitOrder in cornerVisitPermutations:
+        cornerVisitOrder = (currentPosition,) + cornerVisitOrder
+        heuristicDistances.append(ManhattanDistanceBetweenManyPoints(cornerVisitOrder))
+        #heuristicDistances.append(EuclideanDistanceBetweenManyPoints(cornerVisitOrder))
+    #return max(heuristicDistances)
+    #print sorted(heuristicDistances)
+    # Use the minimum cost among all orderings as heuristic
+    return min(heuristicDistances)
+    #return 0 # Default to trivial solution
 
 class AStarCornersAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
@@ -454,7 +572,52 @@ def foodHeuristic(state, problem):
     """
     position, foodGrid = state
     "*** YOUR CODE HERE ***"
-    return 0
+    # Store available food cells in the grid
+    # This can be used as a heuristic
+    availableFoodCells = foodGrid.count()
+    # Store maximum manhattan distance between current position and a food position
+    maxManhattanDistance = 0
+    # Store maximum distance in X direction between current position and a food position
+    maxDistanceX = 0
+    # Store maximum distance in Y direction between current position and a food position
+    maxDistanceY = 0
+    # Store farthest food location in X direction from current position
+    maxDistanceXPoint = position
+    # Store farthest food location in Y direction from current position
+    maxDistanceYPoint = position
+    # Get the available food locations as list
+    foodGridList = foodGrid.asList()
+    # Traverse the food list and update maxManhattanDistance, maxDistanceX, maxDistanceY, maxDistanceXPoint and maxDistanceYPoint
+    for foodPosistion in foodGridList:
+        if(ManhattanDistanceBetweenTwoPoints(foodPosistion, position) > maxManhattanDistance):
+            maxManhattanDistance = ManhattanDistanceBetweenTwoPoints(foodPosistion, position)
+        distanceX, distanceY = ManhattanDistanceEachDirectionBetweenTwoPoints(foodPosistion, position)
+        if distanceX > maxDistanceX:
+            maxDistanceX = distanceX
+            maxDistanceXPoint = foodPosistion
+        if distanceY > maxDistanceY:
+            maxDistanceY = distanceY
+            maxDistanceYPoint = foodPosistion
+    #return availableFoodCells - 1 + maxManhattanDistance
+    #return maxManhattanDistance
+    # Use maxDistanceX + maxDistanceY as heuristic
+    return maxDistanceX + maxDistanceY
+    '''
+    # This Heuristic comes out to be inconsistent
+    visitOrder = ()
+    visitOrder = visitOrder + (position,) + (maxDistanceXPoint,) + (maxDistanceYPoint,)
+    distanceXY = ManhattanDistanceBetweenManyPoints(visitOrder)
+    visitOrder = ()
+    visitOrder = visitOrder + (position,) + (maxDistanceYPoint,) + (maxDistanceXPoint,)
+    distanceYX = ManhattanDistanceBetweenManyPoints(visitOrder)
+    heuristicDistance = distanceXY
+    if heuristicDistance > distanceYX:
+        heuristicDistance = distanceYX
+    #print visitOrder, ' ', heuristicDistance, ', ', maxDistanceX + maxDistanceY
+    return heuristicDistance
+    '''
+    #return availableFoodCells
+    #return 0
 
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"
