@@ -31,3 +31,4 @@ Description:
   -> Trained decision trees to classify whether a user will visit another page on the website or not.
   -> Used Information gain to find best best attribute to split.
   -> Used Chi-Squared stopping criteria to stop growing the tree further.
+  
