@@ -1,11 +1,11 @@
 # Artificial-Intelligence-CSE537<br />
 AI projects Fall 2017<br />
 Assignment 1: Search<br />
-Link - http://www3.cs.stonybrook.edu/~cse537/project01.html
-Description:
-  -> Implemented BFS, DFS, Uniform cost search and A* search methods for finding goal state.
-  -> Implemented the Corner search problem. Defined state space, successor function and goal test.
-  -> Came up with admissable and consistent heuristics for solving corner search and food search problems using A*
+Link - http://www3.cs.stonybrook.edu/~cse537/project01.html<br />
+Description:<br />
+  -> Implemented BFS, DFS, Uniform cost search and A* search methods for finding goal state.<br />
+  -> Implemented the Corner search problem. Defined state space, successor function and goal test.<br />
+  -> Came up with admissable and consistent heuristics for solving corner search and food search problems using A*<br />
 
 Assignment 2: Multi-agent PacMan
 Link - http://www3.cs.stonybrook.edu/~cse537/project02.html
